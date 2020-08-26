@@ -8,10 +8,9 @@ Install:
 
 To run node-red:
 1 - Install using npm: npm install -g --unsafe-perm node-red
-2 - Run from command line: node-red
-3 - Connect using browser: http://127.0.0.1:1880/
-
-Install IoTCentral: npm install node-red-contrib-azure-iot-central
+2 - Install IoT Central bridge: 	npm install node-red-contrib-azure-iotc-bridge
+3 - Run from command line: node-red
+4 - Connect using browser: http://127.0.0.1:1880/
 
 
 To test mosquitto:
