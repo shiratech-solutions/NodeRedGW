@@ -1,21 +1,21 @@
-const VERSION = "0.0.1";
-
-const MESSAGE_TYPE = {
-  REPORT:0xFF
-  
-};
-
-const REPORT_TYPE = {
-	ACCELEROMETER_1:0, 	//AXL362
-	ACCELEROMETER_2:1, 	//ADXL362
-	MAGNOMETER:2,		//BMM150	
-	TEMP:3,				//ADT7410
-	MIC:4,			//IM69D130
-	//ACCELEROMETER_3:5,	//ADXL1002
-};
-
-
 module.exports = function iCoMoXParser(binaryData) {
+	const VERSION = "0.0.1";
+	
+	const MESSAGE_TYPE = {
+	  REPORT:0xFF
+	  
+	};
+
+	const REPORT_TYPE = {
+		ACCELEROMETER_1:0, 	//AXL362
+		ACCELEROMETER_2:1, 	//ADXL362
+		MAGNETOMETER:2,		//BMM150	
+		TEMP:3,				//ADT7410
+		MIC:4,			//IM69D130
+		//ACCELEROMETER_3:5,	//ADXL1002
+	};
+	
+	
 	if (Buffer.isBuffer(binaryData) == false){
 		console.log("Not a buffer");
 		return null;
@@ -100,7 +100,7 @@ module.exports = function iCoMoXParser(binaryData) {
 	
 	//Reports - Magnetometer
 	this.magnetometerGet = function() {
-		if ((this.isReportMessage()==false) || (this.reportTypeGet()!=REPORT_TYPE.MAGNOMETER))
+		if ((this.isReportMessage()==false) || (this.reportTypeGet()!=REPORT_TYPE.MAGNETOMETER))
 			return null;
 		
 		var len = 	Math.floor( (binaryData.length - 10) / 2);			
@@ -140,14 +140,16 @@ module.exports = function iCoMoXParser(binaryData) {
 	}
 	
   
-	//Parse only message type
-	if (this.messageTypeGet() == null)
-		return null;
+	
 	
 	
 	//Get parsed object
 	this.objectGet = function() {
 		var res = {};
+		
+		//Parse only message type
+		if (this.messageTypeGet() == null)
+			return null;
 		
 		switch (this.messageTypeGet()){
 			case MESSAGE_TYPE.REPORT:
@@ -156,23 +158,23 @@ module.exports = function iCoMoXParser(binaryData) {
 				switch (this.reportTypeGet()){
 					case REPORT_TYPE.ACCELEROMETER_1:
 						res.reportType = "ACC1";
-						res.data = this.accelerometer1Get();						
+						res[res.reportType] = this.accelerometer1Get();						
 						break;
 					case REPORT_TYPE.ACCELEROMETER_2:
 						res.reportType = "ACC2";
-						res.data = this.accelerometer2Get();
+						res[res.reportType] = this.accelerometer2Get();
 						break;
-					case REPORT_TYPE.MAGNOMETER:
+					case REPORT_TYPE.MAGNETOMETER:
 						res.reportType = "MAG";
-						res.data = this.magnetometerGet();
+						res[res.reportType] = this.magnetometerGet();
 						break;
 					case REPORT_TYPE.TEMP:
 						res.reportType = "Temp";
-						res.data = this.temperatureGet();
+						res[res.reportType] = this.temperatureGet();
 						break;
 					case REPORT_TYPE.MIC:
 						res.reportType = "MIC";
-						res.data = this.micGet();
+						res[res.reportType] = this.micGet();
 						break;
 					default:
 						return null;

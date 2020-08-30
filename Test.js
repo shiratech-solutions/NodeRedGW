@@ -10,9 +10,17 @@ var iCoMoXParser = require('./iCoMoXParser.js');
 
 var test;
 
+/*
 test = new iCoMoXParser(fs.readFileSync("Messages/Report_ACC1_AXL362.bin", null));
 console.log("Object:" + JSON.stringify(test.objectGet()));
+*/
+test = new iCoMoXParser(fs.readFileSync("Messages/Hello.bin", null));
+console.log("Test:"+JSON.stringify(test));
+console.log("Object:" + JSON.stringify(test.objectGet()));
 
+var obj = test.objectGet();
+console.log(Math.max(obj.ACC1.X));
+/*
 test = new iCoMoXParser(fs.readFileSync("Messages/Report_ACC2_AXL356.bin", null));
 console.log("Object:" + JSON.stringify(test.objectGet()));
 
@@ -27,6 +35,6 @@ console.log("Object:" + JSON.stringify(test.objectGet()));
 
 test = new iCoMoXParser(fs.readFileSync("Messages/Report_MIC_IM69D130.bin", null));
 console.log("Object:" + JSON.stringify(test.objectGet()));
-
+*/
 
 console.log("End");
