@@ -17,3 +17,5 @@ To test mosquitto:
 run mosquitto server: from windows services or command line: mosquitto
 subscribe to a topic: mosquitto_sub.exe -v -t 'test/topic'
 publish topic: mosquitto_pub -t 'test/topic' -m 'helloWorld'
+
+*Note: Make sure the mosquitto app is not blocked by a firewall
