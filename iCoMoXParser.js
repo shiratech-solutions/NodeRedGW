@@ -1,7 +1,11 @@
 module.exports = function iCoMoXParser(binaryData) {
-	const VERSION = "0.0.1";
+	const VERSION = "0.0.2";
+	
+	const BOARD_TYPE = ["SMIP","NB_IOT","POE"];
+	const FW_BRANCH = ["Kit","Suitcase"];
 	
 	const MESSAGE_TYPE = {
+	  HELLO:0x00,
 	  REPORT:0xFF
 	  
 	};
@@ -15,37 +19,75 @@ module.exports = function iCoMoXParser(binaryData) {
 		//ACCELEROMETER_3:5,	//ADXL1002
 	};
 	
-	
-	if (Buffer.isBuffer(binaryData) == false){
-		console.log("Not a buffer");
-		return null;
+	//Binary data set
+	this.binaryDataSet = function(binaryData) {	
+		if (Buffer.isBuffer(binaryData) == false){
+			console.log("Error:Not a buffer");
+			this.binaryData = null;
+			return null;
+		}	
+		this.binaryData = binaryData;
+		return this;		
 	}
-	//Binary data
-	this.binaryData = binaryData;
-	
-	
 	this.messageTypeGet = function() {
-		switch (binaryData[0]){
+		switch (this.binaryData[0]){
 			//Report
 			case MESSAGE_TYPE.REPORT:
+				break;
+			case MESSAGE_TYPE.HELLO:
 				break;
 			default:
 				return null;
 		}
 		return this.binaryData[0];
 	}
-	this.reportTypeGet = function() {
-		return this.binaryData[1];
+	
+	//Hello message
+	this.twoDigStr =  function(num){
+		return ('0' + (num).toString(10)).slice(-2);
+	}
+	this.toHexStr =  function(num){
+		return ('0' + (num).toString(16)).slice(-2);
 	}
 	
+	this.helloMessageGet = function() {
+		if (this.messageTypeGet()!=MESSAGE_TYPE.HELLO)
+			return null;
+		console.log("1");
+		var res = {};
+		if (this.binaryData[1] >= BOARD_TYPE.length)
+			return null;
+		console.log("2");
+		if (this.binaryData[23] >= FW_BRANCH.length)
+			return null;
+		console.log("3");
+		res["BoardType"] = BOARD_TYPE[this.binaryData[1]];
+		res["Board ver"] = this.binaryData[2] + "." + this.binaryData[3];
+		res["MCU Serial"]="";
+		for (var i=0; i< 16; i++)
+			res["MCU Serial"]+= this.toHexStr(this.binaryData[4+i]);   
+		res["FW ver"] = this.binaryData[20] + "." + this.binaryData[21] + "." + this.binaryData[22] + FW_BRANCH[this.binaryData[23]];
+		res["FW build"] = 	this.binaryData[27] + "."  + this.binaryData[26] + "." + this.binaryData.readInt16LE(24)  +   " " + this.binaryData[28] + ":" + this.twoDigStr(this.binaryData[29]) + ":" + this.twoDigStr(this.binaryData[30]);
+		res["BIT status"] = "0x" + this.toHexStr(this.binaryData[31]);
+		res["Part num"] = this.binaryData.slice(32,32+32).toString().replace(/\0[\s\S]*$/g,'');
+		res["Serial"] = this.binaryData.slice(64,64+32).toString().replace(/\0[\s\S]*$/g,'');
+		res["Name"] = this.binaryData.slice(96,96+32).toString().replace(/\0[\s\S]*$/g,'');
+		
+		return res;
+	}
 	//Reports
-	this.isReportMessage = function() {
+	this.reportTypeGet = function() {
+		if (this.isReportMessage()==false)
+			return null;
+		return this.binaryData[1];
+	}
+	this.isReportMessage = function() {		
 		return (this.messageTypeGet()==MESSAGE_TYPE.REPORT);
 	}
 	this.timestampGet = function() {
-		if ((binaryData.length < 10) && (this.isReportMessage()==true))
+		if ((this.binaryData.length < 10) && (this.isReportMessage()==true))
 			return null;		
-		//return this.binaryData.readBigInt64LE(2);
+		
 		return new Date((Number(this.binaryData.readBigInt64LE(2) ) /32768) * 1000);
 		
 	}
@@ -53,11 +95,11 @@ module.exports = function iCoMoXParser(binaryData) {
 	
 	//Reports - Accelerometer 1	
 	this.accelerometer1Get = function() {
-		if ((this.isReportMessage()==false) || (this.reportTypeGet()!=REPORT_TYPE.ACCELEROMETER_1))
+		if  (this.reportTypeGet()!=REPORT_TYPE.ACCELEROMETER_1)
 			return null;
 		
 		//Number of samples per axis
-		var len = 	(binaryData.length - 10) / (3*2);	
+		var len = 	(this.binaryData.length - 10) / (3*2);	
 		var res = {X:new Float32Array(len),Y:new Float32Array(len),Z:new Float32Array(len)};
 		
 		 
@@ -73,11 +115,11 @@ module.exports = function iCoMoXParser(binaryData) {
 	
 	//Reports - Accelerometer 2	
 	this.accelerometer2Get = function() {
-		if ((this.isReportMessage()==false) || (this.reportTypeGet()!=REPORT_TYPE.ACCELEROMETER_2))
+		if  (this.reportTypeGet()!=REPORT_TYPE.ACCELEROMETER_2)
 			return null;
 		
 		//Total number of samples
-		var len = 	Math.floor(2 * (binaryData.length - 10) / 3);	
+		var len = 	Math.floor(2 * (this.binaryData.length - 10) / 3);	
 		var tempArr = [new Float32Array(len / 3),new Float32Array(len / 3),new Float32Array(len / 3)];
 		
 		var payloadIndex = 10;
@@ -100,10 +142,10 @@ module.exports = function iCoMoXParser(binaryData) {
 	
 	//Reports - Magnetometer
 	this.magnetometerGet = function() {
-		if ((this.isReportMessage()==false) || (this.reportTypeGet()!=REPORT_TYPE.MAGNETOMETER))
+		if  (this.reportTypeGet()!=REPORT_TYPE.MAGNETOMETER)
 			return null;
 		
-		var len = 	Math.floor( (binaryData.length - 10) / 2);			
+		var len = 	Math.floor( (this.binaryData.length - 10) / 2);			
 		var tempArr = [new Int32Array(len / 3),new Int32Array(len / 3),new Int32Array(len / 3)];
 		
 		for (var i=0; i < len  ; i++){
@@ -118,18 +160,18 @@ module.exports = function iCoMoXParser(binaryData) {
 	
 	//Reports - Temperature
 	this.temperatureGet = function() {
-		if ((this.isReportMessage()==false) || (this.reportTypeGet()!=REPORT_TYPE.TEMP))
-			return null;		
+		if  (this.reportTypeGet()!=REPORT_TYPE.TEMP)
+			return null;
 		return this.binaryData.readInt16LE(10)/128;
 	}
 	
 	
 	//Reports - MIC
 	this.micGet = function() {
-		if ((this.isReportMessage()==false) || (this.reportTypeGet()!=REPORT_TYPE.MIC))
-			return null;		
+		if  (this.reportTypeGet()!=REPORT_TYPE.MIC)
+			return null;
 		
-		var len = 	Math.floor( (binaryData.length - 10) / 2);			
+		var len = 	Math.floor( (this.binaryData.length - 10) / 2);			
 		var res =  new Float32Array(len);
 		
 		for (var i=0; i < len  ; i++){
@@ -180,9 +222,20 @@ module.exports = function iCoMoXParser(binaryData) {
 						return null;
 				}
 				break;
+			case MESSAGE_TYPE.HELLO:				
+				res = this.helloMessageGet();
+				if (res == null)
+					return null;
+				res.type = "Hello";				
+			break;			
 			default:
 				return null;
 		}
 		return res;
 	}
+	
+	//Set data
+	if (binaryData != undefined)
+		this.binaryDataSet(binaryData);
+	
 };

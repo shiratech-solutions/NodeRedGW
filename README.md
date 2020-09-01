@@ -12,6 +12,9 @@ To run node-red:
 3 - Run from command line: node-red
 4 - Connect using browser: http://127.0.0.1:1880/
 
+Mindsphere node red contrib:
+npm install @mindconnect/node-red-contrib-mindconnect
+
 
 To test mosquitto:
 run mosquitto server: from windows services or command line: mosquitto
