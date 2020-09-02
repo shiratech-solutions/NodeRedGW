@@ -5,11 +5,11 @@ console.log("Start");
 
 var fs = require('fs');
 var iCoMoXParser = require('./iCoMoXParser.js');
+var parser = new iCoMoXParser();
+	
 
 
-
-var testRun = function(){
-	var parser = new iCoMoXParser();
+var testBinToObjRun = function(){
 	var obj;
 	
 	console.log("parser:");
@@ -41,7 +41,16 @@ var testRun = function(){
 
 }
 
+var testObjToBinRun = function(){
+	console.log(parser.binaryMsgGet("SetConfig", {"enable":true}));
+	console.log(parser.binaryMsgGet("SetConfig", {"enable":false}));
+	fs.writeFileSync("SetConfig_enable.bin", parser.binaryMsgGet("SetConfig", {"enable":true, "interval":5}));
+	fs.writeFileSync("SetConfig_disable.bin", parser.binaryMsgGet("SetConfig", {"enable":false}));
+	
+}
 console.log("Test Start");
-testRun();
+//testBinToObjRun();
+testObjToBinRun();
+
 console.log("Test End");
 

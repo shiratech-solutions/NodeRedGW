@@ -22,3 +22,7 @@ subscribe to a topic: mosquitto_sub.exe -v -t 'test/topic'
 publish topic: mosquitto_pub -t 'test/topic' -m 'helloWorld'
 
 *Note: Make sure the mosquitto app is not blocked by a firewall
+
+
+Known issues:
+- IoTCentral Token is not refreshed, currently NodeRed has to be reset to fix.

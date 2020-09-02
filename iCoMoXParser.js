@@ -15,7 +15,7 @@ module.exports = function iCoMoXParser(binaryData) {
 	}
 	
 	//Message parsers - Hello
-	var helloMessageGet = function(binaryData) {
+	var helloMessageObjGet = function(binaryData) {
 		var res = {};
 		if (binaryData[1] >= BOARD_TYPE.length)
 			return null;
@@ -44,7 +44,7 @@ module.exports = function iCoMoXParser(binaryData) {
 		return new Date((Number(binaryData.readBigInt64LE(2) ) /32768) * 1000);
 		
 	}
-	var reportMessageGet = function(binaryData) {
+	var reportMessageObjGet = function(binaryData) {
 		var res = {};
 		
 		if (binaryData[1] >= REPORT_TYPE.length)
@@ -63,7 +63,7 @@ module.exports = function iCoMoXParser(binaryData) {
 	
 	
 	//Reports - Accelerometer 1	
-	var accelerometer1Get = function(binaryData) {
+	var accelerometer1ObjGet = function(binaryData) {
 		//Number of samples per axis
 		var len = 	(binaryData.length - 10) / (3*2);	
 		var res = {X:new Float32Array(len),Y:new Float32Array(len),Z:new Float32Array(len)};
@@ -80,7 +80,7 @@ module.exports = function iCoMoXParser(binaryData) {
 	
 	
 	//Reports - Accelerometer 2	
-	var accelerometer2Get = function(binaryData) {
+	var accelerometer2ObjGet = function(binaryData) {
 		//Total number of samples
 		var len = 	Math.floor(2 * (binaryData.length - 10) / 3);	
 		var tempArr = [new Float32Array(len / 3),new Float32Array(len / 3),new Float32Array(len / 3)];
@@ -104,7 +104,7 @@ module.exports = function iCoMoXParser(binaryData) {
 	}
 	
 	//Reports - Magnetometer
-	var magnetometerGet = function(binaryData) {
+	var magnetometerObjGet = function(binaryData) {
 		var len = 	Math.floor( (binaryData.length - 10) / 2);			
 		var tempArr = [new Int32Array(len / 3),new Int32Array(len / 3),new Int32Array(len / 3)];
 		
@@ -117,12 +117,12 @@ module.exports = function iCoMoXParser(binaryData) {
 	
 	
 	//Reports - Temperature
-	var temperatureGet = function(binaryData) {
+	var temperatureObjGet = function(binaryData) {
 		return binaryData.readInt16LE(10)/128;
 	}	
 	
 	//Reports - MIC
-	var micGet = function(binaryData) {
+	var micObjGet = function(binaryData) {
 		var len = 	Math.floor( (binaryData.length - 10) / 2);			
 		var res =  new Float32Array(len);
 		
@@ -133,25 +133,47 @@ module.exports = function iCoMoXParser(binaryData) {
 		return res;
 	}
 	
+	
+	//To binary
+	var setConfigBinGet = function(obj) {
+		if (!obj)
+			return null;
+		var res = new Buffer.alloc(24);
+		res[1] = 0x4 | 0x2; //Bitmask - Set activation period and common
+		res[2] = 0x1; //Raw data
+		res[3] = 0x40 | 0x1;//Common (Aux channel) and transmit on
+		res.writeUInt16LE(obj["interval"] != undefined?obj["interval"]:1, 12); //Interval in minutes
+		res[14] = 0; //Transmit repitition (1+Value)		
+		res[15] = (obj["enable"] == true)?0x1:0;//Active modules - Raw data
+		res[16] = (obj["enable"] == true)?0x1F:0; //Active Sensors - enable/disable
+		
+		return res;
+	}
+	
+	
+	
 	//Parsing map
 	const MESSAGE_TYPE = {
-	  HELLO:{code:0x00, name:"Hello",  func:helloMessageGet },
-	  REPORT:{code:0xFF, name:"Report",  func:reportMessageGet  }
+	  HELLO:	 {code:0x00, name:"Hello",  	toObjFunc:helloMessageObjGet },
+	  RESET:	 {code:0x01, name:"Reset",  	/*toObjFunc:helloMessageGet*/ },
+	  GET_CONFIG:{code:0x02, name:"GetConfig",  /*toObjFunc:helloMessageGet*/ },
+	  SET_CONFIG:{code:0x03, name:"SetConfig",  /*toObjFunc:helloMessageGet,*/ toBinFunc:setConfigBinGet },
+	  REPORT:	 {code:0xFF, name:"Report",  	toObjFunc:reportMessageObjGet}
 	  
 	};
 
 	const REPORT_TYPE = [
-		{name:"ACC1", 	func:accelerometer1Get} ,	//AXL362
-		{name:"ACC2", 	func:accelerometer2Get} , 	//ADXL362
-		{name:"MAG", 	func:magnetometerGet} ,	//BMM150	
-		{name:"Temp", 	func:temperatureGet} ,		//ADT7410
-		{name:"MIC", 	func:micGet} ,				//IM69D130
+		{name:"ACC1", 	func:accelerometer1ObjGet} ,	//AXL362
+		{name:"ACC2", 	func:accelerometer2ObjGet} , 	//ADXL362
+		{name:"MAG", 	func:magnetometerObjGet} ,	//BMM150	
+		{name:"Temp", 	func:temperatureObjGet} ,		//ADT7410
+		{name:"MIC", 	func:micObjGet} ,				//IM69D130
 	];
 	
 	
 	//Get parsed object
 	this.objectGet = function(binaryData) {
-		var res = {};
+		var res;
 		
 		if ((Buffer.isBuffer(binaryData) == false) || (binaryData.length < 1))
 			return null;
@@ -166,13 +188,33 @@ module.exports = function iCoMoXParser(binaryData) {
 			default:
 				return null;
 		}
-		console.log("msg type:"+ JSON.stringify(msgType));
-		res = msgType.func(binaryData);
+		
+		res = msgType.toObjFunc(binaryData);
 		if (res == null)
 			return null;
 		res["type"] = msgType.name;
 		return res;		
 	}
 	
+	//Get parsed object
+	this.binaryMsgGet = function(type, obj) {
+		var msgType;
+		
+		if ((!type) || (!obj))
+			return null;
+		
+		switch (type){
+			case MESSAGE_TYPE.SET_CONFIG.name:
+				msgType = MESSAGE_TYPE.SET_CONFIG;				
+				break;
+			default:
+				return null;		
+		}
+		res = msgType.toBinFunc(obj);		
+		if (res == null)
+			return null;
+		res[0] = msgType.code;
+		return res;		
+	}	
 	
 };
