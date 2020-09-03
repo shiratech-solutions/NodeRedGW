@@ -1,0 +1,1 @@
+{"type":"SetConfig", "data":{"enable":true,"Temp":true,"ACC1":true,"ACC2":false,"MAG":true,"MIC":false,"Interval":5}}

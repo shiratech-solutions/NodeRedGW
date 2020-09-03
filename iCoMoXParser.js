@@ -204,20 +204,20 @@ var parser = function iCOMOXParser(binaryData) {
 	}
 	
 	//Get parsed object
-	this.binaryMsgGet = function(type, obj) {
+	this.binaryMsgGet = function(obj) {
 		var msgType;
-		
-		if ((!type) || (!obj))
+		console.log(obj);
+		if ((!obj) || (!obj.type))
 			return null;
 		
-		switch (type){
+		switch (obj.type){
 			case MESSAGE_TYPE.SET_CONFIG.name:
 				msgType = MESSAGE_TYPE.SET_CONFIG;				
 				break;
 			default:
 				return null;		
 		}
-		res = msgType.toBinFunc(obj);		
+		res = msgType.toBinFunc(obj.data);		
 		if (res == null)
 			return null;
 		res[0] = msgType.code;

@@ -1,57 +1,69 @@
 
 
 
-console.log("Start");
+const path = require('path');
+const fs = require('fs');
 
-var fs = require('fs');
 var iCOMOXParser = require('./iCOMOXParser.js');
 var parser = new iCOMOXParser();
 	
-
-
-var testBinToObjRun = function(){
+//Convers files from input folder to output folder	
+var convertFile = function(fileName, fileExt, print, save){
 	var obj;
 	
-	console.log("parser:");
-	console.log(parser);
-	console.log(JSON.stringify(parser));
+	if (fileExt == "json") 
+		obj = parser.binaryMsgGet(require("./Input/" + fileName + "." + fileExt));	//Conversion of object to binary Example	
+	else if(fileExt == "bin")
+		obj = parser.objectGet(fs.readFileSync("Input/" + fileName + "." + fileExt, null));//Conversion of binary to object  Example
+	else 
+		return false;
 	
-	//Hello Message
-	obj = parser.objectGet(fs.readFileSync("Messages/Hello.bin", null));
-	console.log("Hello message:" + JSON.stringify(obj));
-
-	//Report messages
-	obj = parser.objectGet(fs.readFileSync("Messages/Report_ACC1_AXL362.bin", null));
-	console.log("Report - ACC1:" + JSON.stringify(obj));
 	
-	obj = parser.objectGet(fs.readFileSync("Messages/Report_ACC2_AXL356.bin", null));
-	console.log("Report - ACC12" + JSON.stringify(obj));
-
-	obj = parser.objectGet(fs.readFileSync("Messages/Report_MAG_BMM150.bin", null));
-	console.log("Report - Manetometer:" + JSON.stringify(obj));
-
-	obj = parser.objectGet(fs.readFileSync("Messages/Report_Temp_ADT7410_1.bin", null));
-	console.log("Report - Temperature:" + JSON.stringify(obj));
-
-	obj = parser.objectGet(fs.readFileSync("Messages/Report_Temp_ADT7410_2.bin", null));
-	console.log("Report - Temperature" + JSON.stringify(obj));
-
-	obj = parser.objectGet(fs.readFileSync("Messages/Report_MIC_IM69D130.bin", null));
-	console.log("Report - Microphone:" + JSON.stringify(obj));
-
+	if (obj == null)
+		return false;
+	
+	if (print)
+		console.log(obj);	
+	
+	if (save != true)
+		return true;
+	
+	//Write to file
+	if (fileExt == "json")
+		fs.writeFileSync("Output/" + fileName + ".bin", obj);	
+	else
+		fs.writeFileSync("Output/" + fileName + ".json" , JSON.stringify(obj));	
+	
+	return true;
 }
 
-var testObjToBinRun = function(){
-	console.log(parser.binaryMsgGet("SetConfig", {"enable":true,"Temp":true,"ACC1":true,"ACC2":false,"MAG":true,"MIC":false,"Interval":5}));
-	console.log(parser.binaryMsgGet("SetConfig", {"enable":false}));
-	
-	//Write a binary file example
-	//fs.writeFileSync("SetConfig_enable.bin", parser.binaryMsgGet("SetConfig", {"enable":true,"Temp":true,"ACC1":true,"ACC2":false,"MAG":true,"MIC":false,"Interval":5}));
-	
+
+//Searches /Input folder for .bin/.json to convert
+var convertInputFolder = function(print, save){
+	fs.readdir(path.join(__dirname, 'Input'), function (err, files) {
+		if (err) {
+			return console.log('Unable to scan \\Input folder: ' + err);
+		} 
+		
+		files.forEach(function (file) {
+			
+			//Convert files
+			var fileName = file.split('.');
+			var fileExt=fileName[fileName.length-1];
+			var fileName = fileName[0];
+			
+			if (convertFile(fileName, fileExt, print, save) == false)
+				console.log("Could not parse file:" + file);
+			else
+				console.log("Parsed:" + file);
+
+		});
+	});
 }
+
+
 console.log("Test Start");
-testBinToObjRun();
-testObjToBinRun();
-
+//Convert all file in the /Input folder
+convertInputFolder(true,true);
 console.log("Test End");
 
