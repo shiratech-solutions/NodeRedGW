@@ -1,4 +1,4 @@
-module.exports = function iCoMoXParser(binaryData) {
+var parser = function iCOMOXParser(binaryData) {
 	const VERSION = "0.0.2";
 	
 	const BOARD_TYPE = ["SMIP","NB_IOT","POE"];
@@ -134,7 +134,7 @@ module.exports = function iCoMoXParser(binaryData) {
 	}
 	
 	
-	//To binary
+	//To binary - Example obj = {"enable":false,"Temp":false,"ACC1":false,"ACC2":false,"MAG":false,"MIC":false,"Interval":5}
 	var setConfigBinGet = function(obj) {
 		if (!obj)
 			return null;
@@ -142,10 +142,17 @@ module.exports = function iCoMoXParser(binaryData) {
 		res[1] = 0x4 | 0x2; //Bitmask - Set activation period and common
 		res[2] = 0x1; //Raw data
 		res[3] = 0x40 | 0x1;//Common (Aux channel) and transmit on
-		res.writeUInt16LE(obj["interval"] != undefined?obj["interval"]:1, 12); //Interval in minutes
+		res.writeUInt16LE(obj["Interval"] != undefined?obj["Interval"]:1, 12); //Interval in minutes
 		res[14] = 0; //Transmit repitition (1+Value)		
 		res[15] = (obj["enable"] == true)?0x1:0;//Active modules - Raw data
-		res[16] = (obj["enable"] == true)?0x1F:0; //Active Sensors - enable/disable
+		
+		res[16] = 0;//(obj["enable"] == true)?0x1F:0; //Active Sensors - enable/disable		
+		for (var i=0; i<REPORT_TYPE.length;i++){
+			if (obj[REPORT_TYPE[i].name] == true){
+				res[16] |= (1 << i);
+			}
+		}
+		
 		
 		return res;
 	}
@@ -218,3 +225,6 @@ module.exports = function iCoMoXParser(binaryData) {
 	}	
 	
 };
+
+
+module.exports = parser;
