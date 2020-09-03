@@ -46,7 +46,7 @@ var testObjToBinRun = function(){
 	console.log(parser.binaryMsgGet("SetConfig", {"enable":false}));
 	
 	//Write a binary file example
-	fs.writeFileSync("SetConfig_enable.bin", parser.binaryMsgGet("SetConfig", {"enable":true,"Temp":true,"ACC1":true,"ACC2":false,"MAG":true,"MIC":false,"Interval":5}));
+	//fs.writeFileSync("SetConfig_enable.bin", parser.binaryMsgGet("SetConfig", {"enable":true,"Temp":true,"ACC1":true,"ACC2":false,"MAG":true,"MIC":false,"Interval":5}));
 	
 }
 console.log("Test Start");

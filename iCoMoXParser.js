@@ -22,14 +22,14 @@ var parser = function iCOMOXParser(binaryData) {
 		if (binaryData[23] >= FW_BRANCH.length)
 			return null;
 		res["BoardType"] = BOARD_TYPE[binaryData[1]];
-		res["Board ver"] = binaryData[2] + "." + binaryData[3];
-		res["MCU Serial"]="";
+		res["BoardVer"] = binaryData[2] + "." + binaryData[3];
+		res["MCUSerial"]="";
 		for (var i=0; i< 16; i++)
-			res["MCU Serial"]+= toHexStr(binaryData[4+i]);   
-		res["FW ver"] = binaryData[20] + "." + binaryData[21] + "." + binaryData[22] + FW_BRANCH[binaryData[23]];
-		res["FW build"] = 	binaryData[27] + "."  + binaryData[26] + "." + binaryData.readInt16LE(24)  +   " " + binaryData[28] + ":" + twoDigStr(binaryData[29]) + ":" + twoDigStr(binaryData[30]);
-		res["BIT status"] = "0x" + toHexStr(binaryData[31]);
-		res["Part num"] = binaryData.slice(32,32+32).toString().replace(/\0[\s\S]*$/g,'');
+			res["MCUSerial"]+= toHexStr(binaryData[4+i]);   
+		res["FwVer"] = binaryData[20] + "." + binaryData[21] + "." + binaryData[22] + FW_BRANCH[binaryData[23]];
+		res["FwBuild"] = 	binaryData[27] + "."  + binaryData[26] + "." + binaryData.readInt16LE(24)  +   " " + binaryData[28] + ":" + twoDigStr(binaryData[29]) + ":" + twoDigStr(binaryData[30]);
+		res["BitStatus"] = "0x" + toHexStr(binaryData[31]);
+		res["PartNum"] = binaryData.slice(32,32+32).toString().replace(/\0[\s\S]*$/g,'');
 		res["Serial"] = binaryData.slice(64,64+32).toString().replace(/\0[\s\S]*$/g,'');
 		res["Name"] = binaryData.slice(96,96+32).toString().replace(/\0[\s\S]*$/g,'');
 		
