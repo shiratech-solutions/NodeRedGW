@@ -309,8 +309,13 @@ var parser = function iCOMOXParser(binaryData) {
 			default:
 				return null;
 		}
-		
-		res = msgType.toObjFunc(binaryData);
+		try{
+			res = msgType.toObjFunc(binaryData);
+		}
+		catch{
+			console.error("Error:Malformed Message");
+			return null;
+		}
 		if (res == null)
 			return null;
 		return {"Type": msgType.name, "Data":res};
