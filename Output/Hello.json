@@ -1,1 +1,1 @@
-{"BoardType":"POE","BoardVer":"1.6","MCUSerial":"12a79e38b7df3c384f1c030038343038","FwVer":"2.8.3Kit","FwBuild":"24.8.2020 10:16:21","BitStatus":"0x00","PartNum":"SRT-ICOMOX-POE-SEC","Serial":"CPS20040022","Name":"iCOMOX PoE","type":"Hello"}
+{"Type":"Hello","Data":{"BoardType":"POE","BoardVer":"1.6","MCUSerial":"12a79e38b7df3c384f1c030038343038","FwVer":"2.8.3Kit","FwBuild":"24.8.2020 10:16:21","BitStatus":"0x00","PartNum":"SRT-ICOMOX-POE-SEC","Serial":"CPS20040022","Name":"iCOMOX PoE"}}

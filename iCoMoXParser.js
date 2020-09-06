@@ -1,10 +1,44 @@
+/*
+The iCOMOX parser object.
+This parser can be used to parse binary messages received from the iCOMOX and to build binary messages which can be sent to the iCOMOX.
+It does not store any information and can be instantiated once and reused
+
+To create an instance of the class:
+NodeJS:
+var iCOMOXParser = require('./iCOMOXParser.js');  //Require file in project
+var parser = new iCOMOXParser();				//Instantiate the class
+
+
+NodeRed:
+Import the iCOMOXParser.json flow, the node creates an instance of the parser as the global variable "iCOMOX" and can be accessed using:
+var iCOMOXParser = global.get('iCOMOX');
+
+To create manually, copy the code and set as a global variable:
+global.set('iCOMOX', new parser());
+
+To parse an incoming binary message from the iCOMOX to a JSON object:
+var obj = parser.objectGet(bin);  //Conversion of binary to object  Example - bin is a buffer
+
+
+To build a binary message from a JSON use:
+var bin = parser.binaryMsgGet(obj);  //Conversion of a json object to binary buffer
+
+obj structure:
+{
+	"Type": text, can be  "Hello"/"Reset"/"GetConfig"/"SetConfig"/"Report"
+	"Data": Message data, according to message type, information in examples
+}	
+
+*/
+
 var parser = function iCOMOXParser(binaryData) {
-	const VERSION = "0.0.2";
+	this.VERSION = "0.0.3";
 	
 	const BOARD_TYPE = ["SMIP","NB_IOT","POE"];
 	const FW_BRANCH = ["Kit","Suitcase"];
-	
-	
+	const COMM_CHANNEL = ["USB","Aux"];
+	const MODULE = ["RawData","Anomaly"];
+	const RESET_TYPE = ["SW","HW", "FWUpdate"];
 
 	//Utility functions
 	var twoDigStr =  function(num){
@@ -15,12 +49,20 @@ var parser = function iCOMOXParser(binaryData) {
 	}
 	
 	//Message parsers - Hello
+	// Hello request
+	var helloMessageBinGet = function() {
+		return new Buffer.alloc(1);
+	}
+	
+	//Hello response
 	var helloMessageObjGet = function(binaryData) {
 		var res = {};
-		if (binaryData[1] >= BOARD_TYPE.length)
+		if ((binaryData[1] >= BOARD_TYPE.length) || (binaryData[23] >= FW_BRANCH.length))
 			return null;
-		if (binaryData[23] >= FW_BRANCH.length)
+		
+		if (binaryData.length < 128)
 			return null;
+		
 		res["BoardType"] = BOARD_TYPE[binaryData[1]];
 		res["BoardVer"] = binaryData[2] + "." + binaryData[3];
 		res["MCUSerial"]="";
@@ -36,9 +78,30 @@ var parser = function iCOMOXParser(binaryData) {
 		return res;
 	}
 	
+	
+	//Message parsers - Reset
+	//Reset request
+	var resetMessageBinGet = function(obj) {
+		if (!obj)
+			return null;
+		res = new Buffer.alloc(2);
+		
+		for (var i=0; i < RESET_TYPE.length;  i++){
+			if (obj["ResetType"] == RESET_TYPE[i])
+				res[1]=i;
+		}
+		return res;
+	}
+	//Reset response
+	var resetMessageObjGet = function(binaryData) {
+		if (binaryData.length != 1)
+			return null;
+		return {"Ack":true};
+	}
+	
 	//Message parsers - Reports
 	var timestampGet = function(binaryData) {
-		if ((binaryData.length < 10) && (this.isReportMessage()==true))
+		if (binaryData.length < 10)
 			return null;		
 		
 		return new Date((Number(binaryData.readBigInt64LE(2) ) /32768) * 1000);
@@ -49,11 +112,11 @@ var parser = function iCOMOXParser(binaryData) {
 		
 		if (binaryData[1] >= REPORT_TYPE.length)
 			return null;
-		res.reportType = REPORT_TYPE[binaryData[1]].name;
-		res[res.reportType] = REPORT_TYPE[binaryData[1]].func(binaryData);
-		if (res[res.reportType] == null)
+		res.ReportType = REPORT_TYPE[binaryData[1]].name;
+		res[res.ReportType] = REPORT_TYPE[binaryData[1]].func(binaryData);
+		if (res[res.ReportType] == null)
 			return null;
-		res.timestamp = timestampGet(binaryData);
+		res["Timestamp"] = timestampGet(binaryData);
 		
 		return res;
 	}
@@ -74,6 +137,7 @@ var parser = function iCOMOXParser(binaryData) {
 			res.Y[i] = binaryData.readInt16LE(12 + i*6) / 1024;
 			res.Z[i] = binaryData.readInt16LE(14 + i*6) / 1024;
 		}
+		
 		
 		return res;		
 	}
@@ -100,6 +164,7 @@ var parser = function iCOMOXParser(binaryData) {
 			}
 		}
 		
+		
 		return {X:tempArr[0], Y:tempArr[1], Z:tempArr[2]};
 	}
 	
@@ -111,6 +176,7 @@ var parser = function iCOMOXParser(binaryData) {
 		for (var i=0; i < len  ; i++){
 			tempArr[i  % 3][Math.floor(i / 3)] = 1000* binaryData.readInt16LE(10 + i*2) / 16;						
 		}
+		
 		
 		return {X:tempArr[0], Y:tempArr[1], Z:tempArr[2]};
 	}
@@ -130,41 +196,80 @@ var parser = function iCOMOXParser(binaryData) {
 			res[i] = binaryData.readInt16LE(10 + i*2) * Math.pow(10, (130/20))/32768;						
 		}
 		
+		
 		return res;
 	}
 	
 	
-	//To binary - Example obj = {"enable":false,"Temp":false,"ACC1":false,"ACC2":false,"MAG":false,"MIC":false,"Interval":5}
+	//Message parsers - Set config
+	
+	//Set config (Ack)
+	var setConfigObjGet = function(binaryData) {	
+		//ACK	
+		if ((!binaryData) || (binaryData.length != 2))
+			return null;
+		res["Ack"] = true;
+		res["Result"] = binaryData[1];
+		if (binaryData[1] != 0)
+			res["Error"] = true;
+		return res;		
+	}
+	//Set config To binary - Example obj = {"Enable":false,"Temp":false,"ACC1":false,"ACC2":false,"MAG":false,"MIC":false,"Interval":5, "Repetition":0}
 	var setConfigBinGet = function(obj) {
 		if (!obj)
 			return null;
 		var res = new Buffer.alloc(24);
 		res[1] = 0x4 | 0x2; //Bitmask - Set activation period and common
 		res[2] = 0x1; //Raw data
-		res[3] = 0x40 | 0x1;//Common (Aux channel) and transmit on
+		res[3] = 0x40 | 0x1;//Common (Aux channel) and transmit on		
 		res.writeUInt16LE(obj["Interval"] != undefined?obj["Interval"]:1, 12); //Interval in minutes
-		res[14] = 0; //Transmit repitition (1+Value)		
-		res[15] = (obj["enable"] == true)?0x1:0;//Active modules - Raw data
+		res[14] = obj["Repetition"] != undefined?obj["Repetition"]:0; //Transmit repitition (1+Value) - default:0		
+		res[15] = (obj["Enable"] == true)?0x1:0;//Active modules - Raw data
 		
-		res[16] = 0;//(obj["enable"] == true)?0x1F:0; //Active Sensors - enable/disable		
+		res[16] = 0;
 		for (var i=0; i<REPORT_TYPE.length;i++){
 			if (obj[REPORT_TYPE[i].name] == true){
 				res[16] |= (1 << i);
 			}
-		}
+		}		
 		
+		return res;
+	}
+	
+	//Message parsers - Get config
+	
+	//Get config - request
+	var getConfigBinGet = function() {
+		return new Buffer.alloc(1);
+	}
+	var getConfigObjGet = function(binaryData) {
+		res = {};
+		
+		//ACK
+		if (binaryData.length < 7)
+			return null;
+		
+		res["CommChannel"] = COMM_CHANNEL[binaryData[1] & (1 << 0)];
+		res["Vibrator"] = ((binaryData[1] >> 2) & 0x1) == 1;
+		res["Transmit"] = ((binaryData[1] >> 6) & 0x1) == 1;
+		res["Save"] = ((binaryData[1] >> 7) & 0x1) == 1;
+		res["Repetition"] = binaryData[2];
+		res["Interval"] = binaryData.readUInt16LE(3);
+		res["Enable"] = ((binaryData[5] & 0x1) != 0);
+		for (var i=0; i<REPORT_TYPE.length;i++){
+			res[REPORT_TYPE[i].name] = (((binaryData[6] >> i) & 0x1) == 1);
+		}
 		
 		return res;
 	}
 	
 	
-	
 	//Parsing map
 	const MESSAGE_TYPE = {
-	  HELLO:	 {code:0x00, name:"Hello",  	toObjFunc:helloMessageObjGet },
-	  RESET:	 {code:0x01, name:"Reset",  	/*toObjFunc:helloMessageGet*/ },
-	  GET_CONFIG:{code:0x02, name:"GetConfig",  /*toObjFunc:helloMessageGet*/ },
-	  SET_CONFIG:{code:0x03, name:"SetConfig",  /*toObjFunc:helloMessageGet,*/ toBinFunc:setConfigBinGet },
+	  HELLO:	 {code:0x00, name:"Hello",  	toObjFunc:helloMessageObjGet, toBinFunc:helloMessageBinGet },
+	  RESET:	 {code:0x01, name:"Reset",  	toObjFunc:resetMessageObjGet, toBinFunc:resetMessageBinGet },
+	  GET_CONFIG:{code:0x02, name:"GetConfig",  toObjFunc:getConfigObjGet, toBinFunc:getConfigBinGet  },
+	  SET_CONFIG:{code:0x03, name:"SetConfig",  toObjFunc:setConfigObjGet, toBinFunc:setConfigBinGet },
 	  REPORT:	 {code:0xFF, name:"Report",  	toObjFunc:reportMessageObjGet}
 	  
 	};
@@ -186,11 +291,20 @@ var parser = function iCOMOXParser(binaryData) {
 			return null;
 		var msgType;
 		switch (binaryData[0]){ //Message type
-			case MESSAGE_TYPE.REPORT.code:
-				msgType = MESSAGE_TYPE.REPORT;
-				break;
 			case MESSAGE_TYPE.HELLO.code:
 				msgType = MESSAGE_TYPE.HELLO;
+				break;
+			case MESSAGE_TYPE.RESET.code:
+				msgType = MESSAGE_TYPE.RESET;				
+				break;
+			case MESSAGE_TYPE.GET_CONFIG.code:
+				msgType = MESSAGE_TYPE.GET_CONFIG;				
+				break;
+			case MESSAGE_TYPE.SET_CONFIG.code:
+				msgType = MESSAGE_TYPE.SET_CONFIG;				
+				break;
+			case MESSAGE_TYPE.REPORT.code:
+				msgType = MESSAGE_TYPE.REPORT;
 				break;
 			default:
 				return null;
@@ -199,30 +313,41 @@ var parser = function iCOMOXParser(binaryData) {
 		res = msgType.toObjFunc(binaryData);
 		if (res == null)
 			return null;
-		res["type"] = msgType.name;
-		return res;		
+		return {"Type": msgType.name, "Data":res};
 	}
 	
 	//Get parsed object
 	this.binaryMsgGet = function(obj) {
 		var msgType;
-		console.log(obj);
-		if ((!obj) || (!obj.type))
+		
+		if ((!obj) || (!obj.Type))
 			return null;
 		
-		switch (obj.type){
+		switch (obj.Type){
+			case MESSAGE_TYPE.HELLO.name:
+				msgType = MESSAGE_TYPE.HELLO;
+				break;
+			case MESSAGE_TYPE.RESET.name:
+				msgType = MESSAGE_TYPE.RESET;				
+				break;
+			case MESSAGE_TYPE.GET_CONFIG.name:
+				msgType = MESSAGE_TYPE.GET_CONFIG;				
+				break;
 			case MESSAGE_TYPE.SET_CONFIG.name:
 				msgType = MESSAGE_TYPE.SET_CONFIG;				
 				break;
 			default:
 				return null;		
 		}
-		res = msgType.toBinFunc(obj.data);		
+		
+		res = msgType.toBinFunc(obj.Data);		
 		if (res == null)
 			return null;
+		
 		res[0] = msgType.code;
 		return res;		
 	}	
+	
 	
 };
 
