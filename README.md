@@ -6,7 +6,7 @@ See comments on how to use in iCOMOXParser.js file/iCOMOXParser.json
 
 Prerequisites:
 1 - NPM installed
-2 - NodeJS installed
+2 - NodeJS installed (Tested on v12.18.3)
 3 - Mosquitto broker (More information in the iCOMOX user manual)
 4 - iCOMOX with FW version 2.8.3 and up (To send data)
 5 - Node Red installed (To install using npm: npm install -g --unsafe-perm node-red )
@@ -29,7 +29,7 @@ To test mosquitto:
 
 Package contents:
 - Flows folder :
-	iCoMoXIoTCentralFlow.json - Entire IoT Central flow, requires configuration of nodes with credentials
+	iCoMoXIoTCentralFlow.json - Entire IoT Central flow, requires configuration of nodes with credentials.		
 	iCOMOXParser.json - The iCOMOX parser node
 
 - Input folder:
@@ -45,10 +45,22 @@ Package contents:
 	
 - iCOMOXParser.js - The parser javascript code
 - Test.js - Code to test the parser code, parses all file in /Input folder to /Output folder
-- test.bat - Runs Test.js
+- Test.bat - Runs Test.js
 
 
 
-Version 0.0.3:
+To use the flow example:
+Import iCoMoXIoTCentralFlow.json to your NodeRed project.
+
+Azure IoT Central node - fill in ScopeID, Device ID and Primary Key.
+	This node receives commands from the Cloud, converts to binary format and sends to a specific iCOMOX with the device ID.
+azure-iotc-bridge node - fill in ID Scope and SAS Token (Aplication token)
+	This node receives binary data from the iCOMOX and sends to the cloud, 
+	the control route sends back a configuration message to the iCOMOX when a "Hello" message is received.
+
+
+
+
+Parser Version 0.0.3:
 - Supports Hello/Reset/SetConfig/GetConfig/Report messages
 - Currently Anomaly detection is not supported
