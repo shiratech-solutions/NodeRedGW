@@ -1,22 +1,57 @@
-This project contains a javascript parser for the binary data sent/received from the iCOMOX.
-The parser node registers an instance of the parser in the global context as "iCOMOX",
-See comments on how to use in iCOMOXParser.js file/iCOMOXParser.json
+This project contains a NodeRed node for parsing the iCOMOX binary data sent/received from the iCOMOX.
 
+If you require a standalone javascript file,  use parser in lib/iCOMOXParser.js (Instrcutions in file comments and Test.js file)
 
 
 Prerequisites:
 1 - NPM installed
 2 - NodeJS installed (Tested on v12.18.3)
 3 - Mosquitto broker (More information in the iCOMOX user manual)
+	*Note: Make sure the mosquitto app is not blocked by a firewall
 4 - iCOMOX with FW version 2.8.3 and up (To send data)
 5 - Node Red installed (To install using npm: npm install -g --unsafe-perm node-red )
-6 - For IoT Central exmaple, Install:
-	IoT Central bridge: 	npm install node-red-contrib-azure-iotc-bridge
-	Azure IoT central node: npm install node-red-contrib-azure-iot-central
-	
+
+
 To run node-red:
 1 - Run from command line: node-red
 2 - Connect using browser: http://127.0.0.1:1880/
+
+
+
+Installing the iCOMOX-Parser node
+1 - Install node to .node-red folder
+	In Windows: C:%HOMEPATH%\.node-red  (Can run install.bat file)
+	In Linux: ~/.node-red  
+2 - Restart node-red - You should see the node added under the "Shiratech" category
+3 - To use - simply connect the node to an incoming iCOMOX binary message or outgoing JSON message, see Examples folder.
+
+
+
+Examples:
+
+iCOMOX simple Example:
+1 - Import Examples/iCOMOX_Example.json
+The Example shows all different JSON inputs to the parser and outputs from the iCOMOX
+
+
+IoT Central Example:
+1 - Install IoT Central bridge: 	npm install node-red-contrib-azure-iotc-bridge
+2 - Install Azure IoT central node: npm install node-red-contrib-azure-iot-central
+3 - Import Examples/iCOMOX_IoT_Central.json
+4 - In Azure IoT central node - fill in ScopeID, Device ID and Primary Key.
+5 - In IoT Central bridge -  fill in ID Scope and SAS Token (Application token)
+The example sends reports information to IoT Central and receives commands for one device.
+
+Note: A device with the correct JSON format should be created in the IoT central cloud.
+	
+
+Mindsphere Example:
+1 - install Mindconnect node : npm install @mindconnect/node-red-contrib-mindconnect
+2 - Import Examples/iCOMOX_Mindsphere.json
+3 - In Mindconnect node - fill in Shared secret field.
+4 - Update the conversion table according to your DataPointID
+Note: A device with the correct JSON format should be created in the Mindsphere cloud.
+
 
 
 To test mosquitto:
@@ -24,41 +59,10 @@ To test mosquitto:
 2 - subscribe to a topic: mosquitto_sub.exe -v -t 'test/topic'
 3 - publish topic: mosquitto_pub -t 'test/topic' -m 'helloWorld'
 
-*Note: Make sure the mosquitto app is not blocked by a firewall
 
 
-Package contents:
-- Flows folder :
-	iCoMoXIoTCentralFlow.json - Entire IoT Central flow, requires configuration of nodes with credentials.		
-	iCOMOXParser.json - The iCOMOX parser node
-
-- Input folder:
-	.bin files - binary messages examples (iCOMOX -> Cloud)
-	.json files - JSON messages examples (Cloud -> iCOMOX)
-
-- Output folder:
-	.json files - Parsed binary messages  (iCOMOX -> Cloud)
-	.bin files - Parsed binary messages examples (Cloud -> iCOMOX)
-
-- Batch folder : 
-	Development batch files used to send sample data (From Input/Output folders) to the MQTT broker
-	
-- iCOMOXParser.js - The parser javascript code
-- Test.js - Code to test the parser code, parses all file in /Input folder to /Output folder
-- Test.bat - Runs Test.js
-
-
-
-To use the flow example:
-Import iCoMoXIoTCentralFlow.json to your NodeRed project.
-
-Azure IoT Central node - fill in ScopeID, Device ID and Primary Key.
-	This node receives commands from the Cloud, converts to binary format and sends to a specific iCOMOX with the device ID.
-azure-iotc-bridge node - fill in ID Scope and SAS Token (Aplication token)
-	This node receives binary data from the iCOMOX and sends to the cloud, 
-	the control route sends back a configuration message to the iCOMOX when a "Hello" message is received.
-
-
+Parser Version 0.0.4:
+- Set config bug fix
 
 
 Parser Version 0.0.3:
