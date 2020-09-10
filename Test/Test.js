@@ -7,7 +7,7 @@ it parses all the example files (.bin and .json) in the Input folder and saves t
 const path = require('path');
 const fs = require('fs');
 
-var iCOMOXParser = require('./iCOMOXParser.js');
+var iCOMOXParser = require('../lib/iCOMOXParser.js');
 var parser = new iCOMOXParser();
 	
 //Convers files from input folder to output folder	
