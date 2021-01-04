@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-icomox-parser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A parser node for the iCOMOX binary messages to JSON messages",
   "main": "index.js",
   "scripts": {
