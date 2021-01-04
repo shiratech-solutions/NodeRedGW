@@ -60,11 +60,13 @@ To test mosquitto:
 3 - publish topic: mosquitto_pub -t 'test/topic' -m 'helloWorld'
 
 
+Version 0.0.5
+- Fixed Acc conversion formula
 
-Parser Version 0.0.4:
+Version 0.0.4:
 - Set config bug fix
 
 
-Parser Version 0.0.3:
+Version 0.0.3:
 - Supports Hello/Reset/SetConfig/GetConfig/Report messages
 - Currently Anomaly detection is not supported
